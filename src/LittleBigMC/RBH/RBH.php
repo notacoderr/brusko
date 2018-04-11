@@ -38,6 +38,7 @@ class RBH extends PluginBase implements Listener {
 	public $mode = 0;
 	public $arenas = array();
         public $currentLevel = "";
+	public $playtime = 300;
         public $isplaying = [], $iswaiting = [], $deaths = [], $kills = [];
 	
 	public function onEnable()
@@ -205,7 +206,7 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 				}
 				return true;
 
-			case "mbstart":
+			case "rbhstart":
 			if($player->isOp())
 			{
 				$player->sendMessage($this->prefix . " •> " . "§aStarting in 10 seconds...");
@@ -213,7 +214,7 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 				$config->set("arenas",$this->arenas);
 				foreach($this->arenas as $arena)
 				{
-					$config->set($arena . "PlayTime", 780);
+					$config->set($arena . "PlayTime", $this->playtime);
 					$config->set($arena . "StartTime", 10);
 				}
 				$config->save();
@@ -264,7 +265,7 @@ public function removefromplaying(string $playername)
 	}
 }
 	
-public function removefromplaying(string $playername)
+public function removefromwaiting(string $playername)
 {
 	if (array_key_exists($playername, $this->iswaiting)){
 		unset($this->waiting[ $playername ]);
@@ -292,6 +293,32 @@ private function cleanPlayer(Player $player)
 	$player->getArmorInventory()->sendContents($player);
 	$player->setNameTag( $this->getServer()->getPluginManager()->getPlugin('PureChat')->getNametag($player) );
 }
+
+private function randSpawn(Player $player, string $arena)
+{
+	$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
+	$i = mt_rand(1, 12);
+	switch($i)
+	{
+		case 0: $thespawn = $config->get($arena . "Spawn1"); break;
+		case 1: $thespawn = $config->get($arena . "Spawn2"); break;
+		case 2: $thespawn = $config->get($arena . "Spawn3"); break;
+		case 3: $thespawn = $config->get($arena . "Spawn4"); break;
+		case 4: $thespawn = $config->get($arena . "Spawn5"); break;
+		case 5: $thespawn = $config->get($arena . "Spawn6"); break;
+		case 6: $thespawn = $config->get($arena . "Spawn7"); break;
+		case 7: $thespawn = $config->get($arena . "Spawn8"); break;
+		case 8: $thespawn = $config->get($arena . "Spawn9"); break;
+		case 9: $thespawn = $config->get($arena . "Spawn10"); break;
+		case 10: $thespawn = $config->get($arena . "Spawn11"); break;
+		case 11: $thespawn = $config->get($arena . "Spawn12"); break;
+	}
+	$spawn = new Position($thespawn[0]+0.5 , $thespawn[1] ,$thespawn[2]+0.5 ,$level);
+	$player->teleport($spawn, 0, 0);
+	$player->setHealth(20);
+	//$player->setGameMode(2);
+	$this->giveKit($player);
+}
 	
 public function assignSpawn($arena)
 {
@@ -305,30 +332,35 @@ public function assignSpawn($arena)
 			$level = $this->getServer()->getLevelByName($arena);
 			switch($i)
 			{
-				case 0: $thespawn = $config->get($arena . "Spawn1");
-				case 1: $thespawn = $config->get($arena . "Spawn2");
-				case 2: $thespawn = $config->get($arena . "Spawn3");
-				case 3: $thespawn = $config->get($arena . "Spawn4");
-				case 4: $thespawn = $config->get($arena . "Spawn5");
-				case 5: $thespawn = $config->get($arena . "Spawn6");
-				case 6: $thespawn = $config->get($arena . "Spawn7");
-				case 7: $thespawn = $config->get($arena . "Spawn8");
-				case 8: $thespawn = $config->get($arena . "Spawn9");
-				case 9: $thespawn = $config->get($arena . "Spawn10");
-				case 10: $thespawn = $config->get($arena . "Spawn11");
-				case 11: $thespawn = $config->get($arena . "Spawn12");
+				case 0: $thespawn = $config->get($arena . "Spawn1"); break;
+				case 1: $thespawn = $config->get($arena . "Spawn2"); break;
+				case 2: $thespawn = $config->get($arena . "Spawn3"); break;
+				case 3: $thespawn = $config->get($arena . "Spawn4"); break;
+				case 4: $thespawn = $config->get($arena . "Spawn5"); break;
+				case 5: $thespawn = $config->get($arena . "Spawn6"); break;
+				case 6: $thespawn = $config->get($arena . "Spawn7"); break;
+				case 7: $thespawn = $config->get($arena . "Spawn8"); break;
+				case 8: $thespawn = $config->get($arena . "Spawn9"); break;
+				case 9: $thespawn = $config->get($arena . "Spawn10"); break;
+				case 10: $thespawn = $config->get($arena . "Spawn11"); break;
+				case 11: $thespawn = $config->get($arena . "Spawn12"); break;
 			}
 			$spawn = new Position($thespawn[0]+0.5 , $thespawn[1] ,$thespawn[2]+0.5 ,$level);
 			$level->loadChunk($spawn->getFloorX(), $spawn->getFloorZ());
 			$player->teleport($spawn, 0, 0);
 			$player->setHealth(20);
-			$player->setGameMode(0);
+			//$player->setGameMode(2);
 			
 			$this->playGame($player);
-			unset( $this->iswaiting [ $name ] );
+			unset( $this->iswaiting[$name] );
 			$i += 1;
 		}
 	}
+}
+	
+public function sendKD(Player $player, string $name, string $arena)
+{
+	$player->addTitle("§l§fK:§a ".$this->kills[$name]." §fD:§c ".$this->deaths[$name], $this->getTop($arena));
 }
 	
 private function playGame(Player $player)
@@ -339,14 +371,35 @@ private function playGame(Player $player)
 	array_push($this->isplaying, $player->getName());
 }
 
-private function giveKit(Player $player, $kit)
+private function giveKit(Player $player)
 {
 	$player->getInventory()->clearAll();
 	$player->getInventory()->setItem(0, Item::get(Item::BOW, 0, 1)->setCustomName('§l§fAncient Long Bow'));
 	$player->getInventory()->setItem(1, Item::get(Item::ARROW, 0, 1)->setCustomName( $this->$arrowname ));
 	$player->getInventory()->setItem(2, Item::get(Item::STONE_AXE, 0, 1)->setCustomName('§l§fHatchet'));
 }
-//I'm HERE!
+	
+public function getTop(string $arena) : string
+{
+	$levelArena = $this->plugin->getServer()->getLevelByName($arena);
+	$plrs = $levelArena->getPlayers();
+	$i = 0;
+	$top = "§f";
+	arsort($this->kills);
+	while($i < 5)
+	{
+		foreach($this->kills as $pln => $k)
+		{
+			if($this->getServer()->getPlayer($pln)->getLevel()->getFolderName() == $arena)
+			{
+				$top .= $pln . ": " $k ." ";
+				$i += 1;
+			}
+		}
+	}
+	return $top;
+}
+
 public function onInteract(PlayerInteractEvent $event)
 {
 	$player = $event->getPlayer();
@@ -439,7 +492,7 @@ public function onInteract(PlayerInteractEvent $event)
 		$config->set("arenas",$this->arenas);
 		foreach($this->arenas as $arena)
 		{
-			$config->set($arena . "PlayTime", 300);
+			$config->set($arena . "PlayTime", $this->playtime);
 			$config->set($arena . "StartTime", 90);
 		}
 		$config->save();
@@ -480,7 +533,7 @@ public function givePrize(Player $player)
            }
        });
 	
-	$form->setTitle(" §l§bMicro §fBattles : PCP");
+	$form->setTitle($this->prefix. " : §l§fP§bC§fP");
 	$rank = $levelapi->getVal($name, "rank");
 	$div = $levelapi->getVal($name, "div");
 	$resp = $levelapi->getVal($name, "respect");
@@ -502,57 +555,57 @@ public function givePrize(Player $player)
 
 class RefreshSigns extends PluginTask
 {
-    public $prefix = TextFormat::GRAY . "[" . TextFormat::AQUA . TextFormat::BOLD . "Micro" . TextFormat::GREEN . "Battles" . TextFormat::RESET . TextFormat::GRAY . "]";
 	
-	public function __construct($plugin)
-	{
-		$this->plugin = $plugin;
-		parent::__construct($plugin);
-	}
+public function __construct($plugin)
+{
+	$this->plugin = $plugin;
+	parent::__construct($plugin);
+}
   
-	public function onRun($tick)
-	{
-		$level = $this->plugin->getServer()->getDefaultLevel();
-		$tiles = $level->getTiles();
-		foreach($tiles as $t) {
-			if($t instanceof Sign) {	
-				$text = $t->getText();
-				if($text[3]==$this->prefix)
+public function onRun($tick)
+{
+	
+	$level = $this->plugin->getServer()->getDefaultLevel();
+	$tiles = $level->getTiles();
+	foreach($tiles as $t) {
+		if($t instanceof Sign) {	
+			$text = $t->getText();
+			if( $text[3] == $this->plugin->prefix)
+			{
+               			$namemap = str_replace("§f", "", $text[2]);
+				$arenalevel = $this->plugin->getServer()->getLevelByName( $namemap );
+               			$playercount = count($arenalevel->getPlayers());
+				$ingame = TextFormat::AQUA . "[Join]";
+				$config = new Config($this->plugin->getDataFolder() . "/config.yml", Config::YAML);
+				if($config->get($namemap . "PlayTime") != $this->plugin->playtime)
 				{
-                    			$namemap = str_replace("§f", "", $text[2]);
-					$arenalevel = $this->plugin->getServer()->getLevelByName( $namemap );
-                    			$playercount = count($arenalevel->getPlayers());
-					$ingame = TextFormat::AQUA . "[Join]";
-					$config = new Config($this->plugin->getDataFolder() . "/config.yml", Config::YAML);
-					if($config->get($namemap . "PlayTime") != 300)
-					{
-						$ingame = TextFormat::DARK_PURPLE . "[Running]";
-					}
-					if( $playercount >= 12)
-					{
-						$ingame = TextFormat::GOLD . "[Full]";
-					}
-					$t->setText($ingame, TextFormat::YELLOW  . $playercount . " / 12", $text[2], $this->prefix);
+					$ingame = TextFormat::DARK_PURPLE . "[Running]";
 				}
+				if( $playercount >= 12)
+				{
+					$ingame = TextFormat::GOLD . "[Full]";
+				}
+				$t->setText($ingame, TextFormat::YELLOW  . $playercount . " / 12", $text[2], $this->prefix);
 			}
 		}
 	}
+}
 
 }
 
 class GameSender extends PluginTask
 {
-    public $prefix = TextFormat::GRAY . "[" . TextFormat::AQUA . TextFormat::BOLD . "Micro" . TextFormat::GREEN . "Battles" . TextFormat::RESET . TextFormat::GRAY . "]";
-    
 	public function __construct($plugin) {
 		$this->plugin = $plugin;
 		parent::__construct($plugin);
 	}
         
-    public function getResetmap() {
-		return new Resetmap($this);
-    }
-  
+    	//public function getResetmap() {
+		//return new Resetmap($this);
+   	 //}
+	
+  	public $prefix = $this->plugin->prefix;
+	
 	public function onRun($tick)
 	{
 		$config = new Config($this->plugin->getDataFolder() . "/config.yml", Config::YAML);
@@ -562,6 +615,8 @@ class GameSender extends PluginTask
 			foreach($arenas as $arena)
 			{
 				$time = $config->get($arena . "PlayTime");
+				$mins = floor($time / 60 % 60);
+				$secs = floor($time % 60);
 				$timeToStart = $config->get($arena . "StartTime");
 				$levelArena = $this->plugin->getServer()->getLevelByName($arena);
 				if($levelArena instanceof Level)
@@ -569,7 +624,7 @@ class GameSender extends PluginTask
 					$playersArena = $levelArena->getPlayers();
 					if( count($playersArena) == 0)
 					{
-						$config->set($arena . "PlayTime", 300);
+						$config->set($arena . "PlayTime", $this->plugin->playtime);
 						$config->set($arena . "StartTime", 90);
 					} else {
 						if(count($playersArena) >= 2 )
@@ -581,41 +636,19 @@ class GameSender extends PluginTask
 								{
 									$pl->sendPopup("§e< " . TextFormat::GREEN . $timeToStart . " seconds to start§e >");
 								}
-									if( $timeToStart == 89)
-									{
-										$levelArena->setTime(7000);
-										$levelArena->stopTime();
-									}
-								if($timeToStart<=0)
+								if( $timeToStart == 89)
 								{
-									$this->refillChests($levelArena);
+									$levelArena->setTime(7000);
+									$levelArena->stopTime();
 								}
 								$config->set($arena . "StartTime", $timeToStart);
 							} else {
 								$aop = count($levelArena->getPlayers());
-								$colors = array();
-								$reds = $this->plugin->reds;
-
-									foreach($playersArena as $pl)
-									{
-										$nametag = $pl->getNameTag();
-										array_push($colors, $nametag);
-									}
-									$names = implode("-", $colors);
-									$reds = substr_count($names, "§l§c[RED]");
-									$blues = substr_count($names, "§l§9[BLUE]");
-									$greens = substr_count($names, "§l§a[GREEN]");
-									$yellows = substr_count($names, "§l§e[YELLOW]");
-									foreach($playersArena as $pla)
-									{
-										$pla->sendPopup("§l§cRED:" . $reds . "  §9BLUE:" . $blues . "  §aGREEN:" . $greens . "  §eYELLOW:" . $yellows );
-									}
-								
-								
+								foreach($playersArena as $pla)
+								{
+									$pla->sendPopup($this->plugin->getTop($arena));
+								}
 								$time--;
-								
-								$time2 = $time - 180;
-								$minutes = $time2 / 60;
 								
 								switch($time)
 								{
@@ -630,51 +663,38 @@ class GameSender extends PluginTask
 									case 240:
 										foreach($playersArena as $pl)
 										{
-											$pl->addTitle("§l§fRo§7b§fin §aHood", "§f§lHas been lifted, eliminate all enemies.");
+											$pl->addTitle("§l§7Countdown", "§b§l".$mins. "§f:§b" .$secs. "§f remaining");
 										}
 									break;
 									
 									case 180:
 										foreach($playersArena as $pl)
 										{
-											$pl->sendMessage("§lAttention §r•> §7Chests have been refilled...");
+											$pl->addTitle("§l§7Countdown", "§b§l".$mins. "§f:§b" .$secs. "§f remaining");
 										}
 									break;
 									
 									default:
-									if($time >= 180)
+									if($time <= 75)
 									{
-										$time2 = $time - 180;
-										$minutes = $time2 / 60;
-									} else {
-										$minutes = $time / 60;
-										if(is_int($minutes) && $minutes>0)
+										foreach($playersArena as $pl)
 										{
-											foreach($playersArena as $pl)
-											{
-												$pl->sendMessage($this->prefix . " •> " . $minutes . " minutes remaining");
-											}
+											$pl->sendPopup("§l§7Time remaining: §b".$mins. "§f:§b" .$secs);
 										}
-										if($time == 30 || $time == 15 || $time == 10 || $time ==5 || $time ==4 || $time ==3 || $time ==2 || $time == 1)
+									}
+									if($time <= 0)
+									{
+										$this->plugin->announceWinner($arena);
+										$spawn = $this->plugin->getServer()->getDefaultLevel()->getSafeSpawn();
+										$this->plugin->getServer()->getDefaultLevel()->loadChunk($spawn->getX(), $spawn->getZ());
+										foreach($playersArena as $pl)
 										{
-											foreach($playersArena as $pl)
-											{
-												$pl->sendMessage($this->prefix . " •> " . $time . " seconds remaining");
-											}
+											$pl->addTitle("§lGame Over","§cresetting map: §a" . $arena);
+											$pl->setHealth(20);
+											$this->plugin->leaveArena($pl);
+											//$this->getResetmap()->reload($levelArena);
 										}
-										if($time <= 0)
-										{
-											$spawn = $this->plugin->getServer()->getDefaultLevel()->getSafeSpawn();
-											$this->plugin->getServer()->getDefaultLevel()->loadChunk($spawn->getX(), $spawn->getZ());
-											foreach($playersArena as $pl)
-											{
-												$pl->addTitle("§lGame Over","§cGame draw in map: §a" . $arena);
-												$pl->setHealth(20);
-												$this->plugin->leaveArena($pl);
-												//$this->getResetmap()->reload($levelArena);
-											}
-											$time = 300;
-										}
+										$time = $this->plugin->playtime;
 									}
 								}
 								$config->set($arena . "PlayTime", $time);
