@@ -18,6 +18,7 @@ use pocketmine\Player;
 use pocketmine\tile\Sign;
 use pocketmine\level\Level;
 use pocketmine\item\Item;
+use pocketmine\entity\projectile\Arrow as Bullet;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\entity\EntityDamageEvent;
@@ -95,22 +96,28 @@ public function onQuit(PlayerQuitEvent $event) : void
 	
 public function onHit(ProjectileHitEntityEvent $event)
 {
-	$shooter = $event->getProjectile()->getOwningEntity();
+	$shooter = $event->getEntity()->getOwningEntity();//shooter
 	$noob = $event->getEntityHit();//todo
+	if($noob instanceof Player && $shooter instanceof Player/* && $event->getEntity() instanceof Bullet*/)
+	{
+		$this->addKill($shooter->getName());
+		$this->addDeath($noob->getName());
+		$this->randSpawn($noob, $noob->getLevel()->getFolderName());
+	}
 }
-	
+/*	
 public function onShoot(EntityShootBowEvent $event)
 {
-	/*$player = $event->getEntity();
+	$player = $event->getEntity();
 	$level = $player->getLevel()->getFolderName(); 
 	if($player instanceof Player && array_key_exists($player->getName(), $this->isplaying)
 	{
 		$event->setProjectile(LLAMA_SPIT);
 	}
 	getOwningEntity() // for future shits
-	*/
-}
 	
+}
+*/	
 public function onBlockBreak(BlockBreakEvent $event)
 {
 	$player = $event->getPlayer();
@@ -237,6 +244,11 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 		}
 		return true;
 	} 
+}
+
+public function announceWinner(String $arena)
+{
+	//soon
 }
 	
 private function addKill(string $name) : void
@@ -409,7 +421,7 @@ private function giveKit(Player $player)
 	
 public function getTop(string $arena) : string
 {
-	$levelArena = $this->plugin->getServer()->getLevelByName($arena);
+	$levelArena = $this->getServer()->getLevelByName($arena);
 	$plrs = $levelArena->getPlayers();
 	$i = 0;
 	$top = "§f";
@@ -724,7 +736,7 @@ class GameSender extends PluginTask
 								}
 								$config->set($arena . "PlayTime", $time);
 							}
-						} else { //if player is < 2
+						} else { //if player is < 2 onWait time
 							foreach($playersArena as $pl)
 							{
 								$pl->sendPopup("§e§l< §7need more player(s) to start§e >");
