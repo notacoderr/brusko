@@ -622,13 +622,9 @@ class GameSender extends PluginTask
 		$this->plugin = $plugin;
 		parent::__construct($plugin);
 	}
-        
     	//public function getResetmap() {
 		//return new Resetmap($this);
    	 //}
-	
-  	public $prefix = $this->plugin->prefix;
-	
 	public function onRun($tick)
 	{
 		$config = new Config($this->plugin->getDataFolder() . "/config.yml", Config::YAML);
