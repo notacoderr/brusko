@@ -409,7 +409,7 @@ public function getTop(string $arena) : string
 		{
 			if($this->getServer()->getPlayer($pln)->getLevel()->getFolderName() == $arena)
 			{
-				$top .= $pln . ": " $k ." ";
+				$top .= $pln . ": ". $k ." ";
 				$i += 1;
 			}
 		}
