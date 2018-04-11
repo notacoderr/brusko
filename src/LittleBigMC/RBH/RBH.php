@@ -33,7 +33,7 @@ use LittleBigMC\RBH\RefreshArena;
 class RBH extends PluginBase implements Listener {
 
         public $prefix = TextFormat::BOLD . TextFormat::GRAY . "[" . TextFormat::AQUA . "Robin" . TextFormat::GREEN . "Hood" . TextFormat::RESET . TextFormat::GRAY . "]";
-	public $arrow = Item::get(Item::ARROW, 0, 1)->setCustomName("");
+	public $arrow;
 	public $mode = 0;
 	public $arenas = array();
         public $currentLevel = "";
@@ -68,6 +68,11 @@ class RBH extends PluginBase implements Listener {
 		$this->getServer()->getScheduler()->scheduleRepeatingTask(new RefreshSigns($this), 10);
 		
         }
+	
+public function getArrow() : Item
+{
+	return Item::get(Item::ARROW, 0, 1)->setCustomName("");
+}
 	
 public function onJoin(PlayerJoinEvent $event) : void
 {
@@ -392,7 +397,7 @@ private function giveKit(Player $player)
 {
 	$player->getInventory()->clearAll();
 	$player->getInventory()->setItem(0, Item::get(Item::BOW, 0, 1)->setCustomName('§l§fAncient Long Bow'));
-	$player->getInventory()->setItem(1, $this->arrow);
+	$player->getInventory()->setItem(1, $this->getArrow() );
 	$player->getInventory()->setItem(2, Item::get(Item::STONE_AXE, 0, 1)->setCustomName('§l§fHatchet'));
 }
 	
