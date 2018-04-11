@@ -11,6 +11,6 @@ commands:
     rbh:
         usage: /mb <leave-make>
         description: MicroBattles-Commands
-    mbstart:
+    rbhstart:
         usage: /mbstart
         description: MicroBattles-Force start
