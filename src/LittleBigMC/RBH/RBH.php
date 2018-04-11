@@ -380,7 +380,7 @@ public function onInteract(PlayerInteractEvent $event)
                         		$player->setHealth(20);
 					$player->setGameMode(2);
 						
-					$this->iswaiting[ $player->getName() ] = $namemap; //beta
+					$this->iswaiting[ $player->getName() ] = $namemap;
 					return true;
 					} else {
 						$player->sendMessage($this->prefix . " •> " . "You can't join");
@@ -431,50 +431,7 @@ public function onInteract(PlayerInteractEvent $event)
 			return true;
 		}
 	}
-	
-	public function sendClasses(Player $player)
-	{
-		$form = $this->getServer()->getPluginManager()->getPlugin("FormAPI")->createSimpleForm(function (Player $player, array $data)
-		{
-            if (isset($data[0]))
-			{
-                $button = $data[0];
-                switch ($button)
-				{
-					case 0: $this->giveKit($player, 'fighter');
-					break;
-					case 1: $this->giveKit($player, 'marksman');
-					break;
-					case 2: $this->giveKit($player, 'miner');
-					break;
-					case 3: 
-						if($player->hasPermission('pcpmb.chemist')) {
-							$this->giveKit($player, 'chemist');
-						} else {
-							$player->sendMessage('•§c You are not eligible for this Class');
-						}
-					break;
-					case 4:
-						if($player->hasPermission('pcpmb.bomber')) {
-							$this->giveKit($player, 'bomber');
-						} else {
-							$player->sendMessage('•§c You are not eligible for this Class');
-						}
-					break;
-					default: $player->getInventory()->clearAll();
-				}
-				return true;
-            }
-        });
-		$form->setTitle(" §l§fMicro Battles - Classes");
-	
-		$form->addButton("§lFighter", 1, "https://cdn3.iconfinder.com/data/icons/minecraft-icons/128/Stone_Sword.png");
-        $form->addButton("§lMarksman", 1, "https://cdn4.iconfinder.com/data/icons/medieval-4/500/medieval-ancient-antique_16-128.png");
-		$form->addButton("§lMiner", 1, "https://cdn3.iconfinder.com/data/icons/minecraft-icons/128/Iron_Pickaxe.png");
-		$form->addButton("§6§lChemist", 1, "https://cdn2.iconfinder.com/data/icons/brainy-icons-science/120/0920-lab-flask04-128.png");
-		$form->addButton("§6§lBomber", 1, "https://cdn3.iconfinder.com/data/icons/minecraft-icons/128/3D_Creeper.png");
-		$form->sendToPlayer($player);
-	}
+
 	
 	public function refreshArenas()
 	{
@@ -482,77 +439,69 @@ public function onInteract(PlayerInteractEvent $event)
 		$config->set("arenas",$this->arenas);
 		foreach($this->arenas as $arena)
 		{
-			$config->set($arena . "PlayTime", 780);
+			$config->set($arena . "PlayTime", 300);
 			$config->set($arena . "StartTime", 90);
 		}
 		$config->save();
 	}
 
-	public function dropitem(PlayerDropItemEvent $event)
-    {
-        $player = $event->getPlayer();
-		if(in_array($player->getLevel()->getFolderName(), $this->arenas) || array_key_exists($player->getName(), $this->iswaiting))
-		{
-			if ($event->getItem()->getId() == 339 && $event->getItem()->getDamage() == 69 or $event->getItem()->getDamage() == 666){
-				$event->setCancelled();
-				return true;
-			}
-			
-			$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-			if($config->get($level . "PlayTime") > 765)
-			{
-				$event->setCancelled(true);
-				return true;
-			}
-			$event->setCancelled(false);
-		}
-    }
-	
-	public function givePrize(Player $player)
+public function dropitem(PlayerDropItemEvent $event)
+{
+	$player = $event->getPlayer();
+	if(in_array($player->getLevel()->getFolderName(), $this->arenas))
 	{
-		$name = $player->getLowerCaseName();
-		$levelapi = $this->getServer()->getPluginManager()->getPlugin('LevelAPI');
-		$xp = mt_rand(15, 21);
-		$levelapi->addVal($name, "exp", $xp);
-		$crate = $this->getServer()->getPluginManager()->getPlugin("CoolCrates")->getSessionManager()->getSession($player);
-		$crate->addCrateKey("common.crate", 2);
-		
-		$form = $this->getServer()->getPluginManager()->getPlugin("FormAPI")->createSimpleForm(function (Player $player, array $data)
-		{
-            if (isset($data[0]))
-			{
-                $button = $data[0];
-                switch ($button)
-				{
-					case 0: $this->getServer()->dispatchCommand($player, "top");
-						break;	
-					default: 
-						return true;
-				}
-				return true;
-            }
-        });
-		
-		$form->setTitle(" §l§bMicro §fBattles : PCP");
-		$rank = $levelapi->getVal($name, "rank");
-		$div = $levelapi->getVal($name, "div");
-		$resp = $levelapi->getVal($name, "respect");
-		
-		$s = "";
-		$s .= "§l§f• Experience points: +§a".$xp."§r\n";
-		$s .= "§l§f• Bonus: +§e2§f common crate keys§r\n";
-		$s .= "§l§f• Current ELO: §b".$rank." ".$div." §f| RP: §7[§c".$resp."§7] §f•§r\n";
-		$s .= "§r\n";
-        $form->setContent($s);
-		
-        $form->addButton("§lCheck Rankings", 1, "https://cdn4.iconfinder.com/data/icons/we-re-the-best/512/best-badge-cup-gold-medal-game-win-winner-gamification-first-award-acknowledge-acknowledgement-prize-victory-reward-conquest-premium-rank-ranking-gold-hero-star-quality-challenge-trophy-praise-victory-success-128.png");
-		$form->addButton("Confirm", 1, "https://cdn1.iconfinder.com/data/icons/materia-arrows-symbols-vol-8/24/018_317_door_exit_logout-128.png");
-		$form->sendToPlayer($player);
-		
+		$event->setCancelled(true);
+		return true;
 	}
 }
+	
+public function givePrize(Player $player)
+{
+	$name = $player->getLowerCaseName();
+	$levelapi = $this->getServer()->getPluginManager()->getPlugin('LevelAPI');
+	$xp = mt_rand(15, 21);
+	$levelapi->addVal($name, "exp", $xp);
+	$crate = $this->getServer()->getPluginManager()->getPlugin("CoolCrates")->getSessionManager()->getSession($player);
+	$crate->addCrateKey("common.crate", 2);
+	
+	$form = $this->getServer()->getPluginManager()->getPlugin("FormAPI")->createSimpleForm(function (Player $player, array $data)
+	{
+           if (isset($data[0]))
+		{
+               $button = $data[0];
+               switch ($button)
+			{
+				case 0: $this->getServer()->dispatchCommand($player, "top");
+					break;	
+				default: 
+					return true;
+			}
+			return true;
+           }
+       });
+	
+	$form->setTitle(" §l§bMicro §fBattles : PCP");
+	$rank = $levelapi->getVal($name, "rank");
+	$div = $levelapi->getVal($name, "div");
+	$resp = $levelapi->getVal($name, "respect");
+	
+	$s = "";
+	$s .= "§l§f• Experience points: +§a".$xp."§r\n";
+	$s .= "§l§f• Bonus: +§e2§f common crate keys§r\n";
+	$s .= "§l§f• Current ELO: §b".$rank." ".$div." §f| RP: §7[§c".$resp."§7] §f•§r\n";
+	$s .= "§r\n";
+       	$form->setContent($s);
+	
+       	$form->addButton("§lCheck Rankings", 1, "https://cdn4.iconfinder.com/data/icons/we-re-the-best/512/best-badge-cup-gold-medal-game-win-winner-gamification-first-award-acknowledge-acknowledgement-prize-victory-reward-conquest-premium-rank-ranking-gold-hero-star-quality-challenge-trophy-praise-victory-success-128.png");
+	$form->addButton("Confirm", 1, "https://cdn1.iconfinder.com/data/icons/materia-arrows-symbols-vol-8/24/018_317_door_exit_logout-128.png");
+	$form->sendToPlayer($player);
+	
+}
+	
+}
 
-class RefreshSigns extends PluginTask {
+class RefreshSigns extends PluginTask
+{
     public $prefix = TextFormat::GRAY . "[" . TextFormat::AQUA . TextFormat::BOLD . "Micro" . TextFormat::GREEN . "Battles" . TextFormat::RESET . TextFormat::GRAY . "]";
 	
 	public function __construct($plugin)
@@ -570,12 +519,12 @@ class RefreshSigns extends PluginTask {
 				$text = $t->getText();
 				if($text[3]==$this->prefix)
 				{
-                    $namemap = str_replace("§f", "", $text[2]);
+                    			$namemap = str_replace("§f", "", $text[2]);
 					$arenalevel = $this->plugin->getServer()->getLevelByName( $namemap );
-                    $playercount = count($arenalevel->getPlayers());
+                    			$playercount = count($arenalevel->getPlayers());
 					$ingame = TextFormat::AQUA . "[Join]";
 					$config = new Config($this->plugin->getDataFolder() . "/config.yml", Config::YAML);
-					if($config->get($namemap . "PlayTime") != 780)
+					if($config->get($namemap . "PlayTime") != 300)
 					{
 						$ingame = TextFormat::DARK_PURPLE . "[Running]";
 					}
@@ -620,7 +569,7 @@ class GameSender extends PluginTask
 					$playersArena = $levelArena->getPlayers();
 					if( count($playersArena) == 0)
 					{
-						$config->set($arena . "PlayTime", 780);
+						$config->set($arena . "PlayTime", 300);
 						$config->set($arena . "StartTime", 90);
 					} else {
 						if(count($playersArena) >= 2 )
@@ -632,7 +581,7 @@ class GameSender extends PluginTask
 								{
 									$pl->sendPopup("§e< " . TextFormat::GREEN . $timeToStart . " seconds to start§e >");
 								}
-									if($timeToStart==89)
+									if( $timeToStart == 89)
 									{
 										$levelArena->setTime(7000);
 										$levelArena->stopTime();
@@ -665,38 +614,27 @@ class GameSender extends PluginTask
 								
 								$time--;
 								
+								$time2 = $time - 180;
+								$minutes = $time2 / 60;
+								
 								switch($time)
 								{
-									case 779:
+									case 299:
 										$this->plugin->assignTeam($arena);
 										foreach($playersArena as $pl)
 										{
-											$pl->sendMessage("§e•>--------------------------------");
-											$pl->sendMessage("§e•>§cAttention: §6The game will start soon!");
-											$pl->sendMessage("§e•>§fUsing the map: §a" . $arena);
-											$pl->sendMessage("§e•>§binitiating §a15 §bseconds of mercy time");
-											$pl->sendMessage("§e•>--------------------------------");
-										}
-									break;
-
-									case 765:
-										$this->plugin->removerestrictriction($arena);
-										foreach($playersArena as $pl)
-										{
-											$pl->addTitle("§l§aGame Start","§l§fNo PVP for §a15 §fseconds, goodluck!");
+											$pl->addTitle("§l§fRo§7b§fin §aHood","§l§fYou are playing on: §a" . $arena);
 										}
 									break;
 									
-									case 750:
-										$this->plugin->removeprotection($arena);
+									case 240:
 										foreach($playersArena as $pl)
 										{
-											$pl->addTitle("§l§cMe§7r§ccy Time", "§f§lHas been lifted, eliminate all enemies.");
+											$pl->addTitle("§l§fRo§7b§fin §aHood", "§f§lHas been lifted, eliminate all enemies.");
 										}
 									break;
 									
-									case 480:
-										$this->refillChests($levelArena);
+									case 180:
 										foreach($playersArena as $pl)
 										{
 											$pl->sendMessage("§lAttention §r•> §7Chests have been refilled...");
@@ -735,35 +673,11 @@ class GameSender extends PluginTask
 												$this->plugin->leaveArena($pl);
 												//$this->getResetmap()->reload($levelArena);
 											}
-											$time = 780;
+											$time = 300;
 										}
 									}
 								}
 								$config->set($arena . "PlayTime", $time);
-							}
-						} else {
-							if( $timeToStart <= 0 )
-							{
-								foreach($playersArena as $pl)
-								{
-									foreach($this->plugin->getServer()->getOnlinePlayers() as $plpl)
-									{
-										$plpl->sendMessage($this->prefix . " •> ".$pl->getNameTag() . "§l§b won in map : §a" . $arena);
-									}
-									$pl->setHealth(20);
-									$this->plugin->leaveArena($pl);
-									$this->plugin->api->addMoney($pl, mt_rand(390, 408));//bullshit
-									$this->plugin->givePrize($pl);
-								}
-								$config->set($arena . "PlayTime", 780);
-								$config->set($arena . "StartTime", 90);
-							} else {
-								foreach($playersArena as $pl)
-								{
-									$pl->sendPopup("§l§cNeed more players");
-								}
-								$config->set($arena . "PlayTime", 780);
-								$config->set($arena . "StartTime", 90);
 							}
 						}
 					}
