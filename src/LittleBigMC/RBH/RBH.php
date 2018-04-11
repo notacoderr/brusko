@@ -724,6 +724,11 @@ class GameSender extends PluginTask
 								}
 								$config->set($arena . "PlayTime", $time);
 							}
+						} else { //if player is < 2
+							foreach($playersArena as $pl)
+							{
+								$pl->sendPopup("§e§l< §7need more player(s) to start§e >");
+							}
 						}
 					}
 				}
