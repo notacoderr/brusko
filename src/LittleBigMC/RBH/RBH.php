@@ -33,7 +33,7 @@ use LittleBigMC\RBH\RefreshArena;
 class RBH extends PluginBase implements Listener {
 
         public $prefix = TextFormat::BOLD . TextFormat::GRAY . "[" . TextFormat::AQUA . "Robin" . TextFormat::GREEN . "Hood" . TextFormat::RESET . TextFormat::GRAY . "]";
-	public $arrowname = " ";
+	public $arrow = Item::get(Item::ARROW, 0, 1)->setCustomName("");
 	public $mode = 0;
 	public $arenas = array();
         public $currentLevel = "";
@@ -227,7 +227,19 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 			return true;
 		}
 	} 
-}	
+}
+	
+private function addKill(string $name) : void
+{
+	$kill = $this->kills[ $name ];
+	$this->kills[ $name ] = (int) $kill + 1;
+}
+	
+private function addDeath(string $name) : void
+{
+	$death = $this->deaths[ $name ];
+	$this->deaths[ $name ] = (int) $death + 1;
+}
 	
 public function leaveArena(Player $player, $arena = null) : void
 {
@@ -262,7 +274,7 @@ function onTeleport(EntityLevelChangeEvent $event)
 		}
         }
 }
-	
+
 public function removefromplaying(string $playername)
 {
 	if (in_array($playername, $this->isplaying)){
@@ -380,7 +392,7 @@ private function giveKit(Player $player)
 {
 	$player->getInventory()->clearAll();
 	$player->getInventory()->setItem(0, Item::get(Item::BOW, 0, 1)->setCustomName('§l§fAncient Long Bow'));
-	$player->getInventory()->setItem(1, Item::get(Item::ARROW, 0, 1)->setCustomName( $this->$arrowname ));
+	$player->getInventory()->setItem(1, $this->arrow);
 	$player->getInventory()->setItem(2, Item::get(Item::STONE_AXE, 0, 1)->setCustomName('§l§fHatchet'));
 }
 	
