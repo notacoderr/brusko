@@ -24,6 +24,7 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityLevelChangeEvent;
 use pocketmine\event\entity\EntityShootBowEvent;
+use pocketmine\event\entity\ProjectileHitEntityEvent;
 use pocketmine\inventory\ChestInventory;
 use onebone\economyapi\EconomyAPI;
 
