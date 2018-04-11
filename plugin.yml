@@ -1,14 +1,14 @@
-name: MicroBattles
-main: LittleBigMC\MicroBattles\MicroBattles
+name: AlyasRobinHood
+main: LittleBigMC\RBH\RBH
 
 author: CodeBreak
 
-version: 2.3.3-indev
+version: 1.0.1-indev
 
 api: [3.0.0-ALPHA11, 3.0.0-ALPHA12]
 
 commands:
-    mb:
+    r:
         usage: /mb <leave-make>
         description: MicroBattles-Commands
     lang:
