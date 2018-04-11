@@ -215,8 +215,8 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 					$player->sendMessage($this->prefix . " •> " . "/rbh <Rank> <Player> : Set Rank(Ranks: Warrior, Warrior+, Archer, Pyromancer)");
 					$player->sendMessage($this->prefix . " •> " . "/rbhstart : Start the game in 10 seconds");
 				}
-				return true;
-
+			break;
+			
 			case "rbhstart":
 			if($player->isOp())
 			{
@@ -230,8 +230,11 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 				}
 				$config->save();
 			}
-			return true;
+			break;
+			default:
+				return true;
 		}
+		return true;
 	} 
 }
 	
