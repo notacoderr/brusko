@@ -150,6 +150,7 @@ public function onDamage(EntityDamageEvent $event)
 					$event->setCancelled();
 					$jugador = $event->getEntity();
 					$asassin = $event->getDamager();
+					$this->randSpawn( $jugador, $jugador->getLevel()->getFolderName() );
 				}
 			}	
 		}
@@ -391,10 +392,11 @@ public function sendKD(Player $player, string $name, string $arena)
 	
 private function playGame(Player $player)
 {
-	$player->addTitle("§lPCP : §fRobin§aHood", "§l§fHighest kills wins");
+	$player->addTitle("§lPCP : §fRobin§aHood", "§l§fAim for the highest");
 	$this->giveKit($player);
-	//$this->isplaying[ $player->getName() ] = $arena;
-	array_push($this->isplaying, $player->getName());
+	$this->kills[ $player->getName() ] = 0; //create kill points
+	$this->deaths[ $player->getName() ] = 0; //create death points
+	array_push($this->isplaying, $player->getName()); //finally, set as playing
 }
 
 private function giveKit(Player $player)
@@ -612,7 +614,7 @@ public function onRun($tick)
 				{
 					$ingame = TextFormat::GOLD . "[Full]";
 				}
-				$t->setText($ingame, TextFormat::YELLOW  . $playercount . " / 12", $text[2], $this->prefix);
+				$t->setText($ingame, TextFormat::YELLOW  . $playercount . " / 12", $text[2], $this->plugin->prefix);
 			}
 		}
 	}
@@ -676,7 +678,7 @@ class GameSender extends PluginTask
 								switch($time)
 								{
 									case 299:
-										$this->plugin->assignTeam($arena);
+										$this->plugin->assignSpawn($arena);
 										foreach($playersArena as $pl)
 										{
 											$pl->addTitle("§l§fRo§7b§fin §aHood","§l§fYou are playing on: §a" . $arena);
