@@ -20,7 +20,6 @@ use pocketmine\level\Level;
 use pocketmine\item\Item;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
-use pocketmine\event\player\PlayerDeathEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityLevelChangeEvent;
@@ -33,7 +32,7 @@ use LittleBigMC\RBH\RefreshArena;
 
 class RBH extends PluginBase implements Listener {
 
-        public $prefix = TextFormat::GRAY . "[" . TextFormat::AQUA . TextFormat::BOLD . "Robin" . TextFormat::GREEN . "Hood" . TextFormat::RESET . TextFormat::GRAY . "]";
+        public $prefix = TextFormat::BOLD . TextFormat::GRAY . "[" . TextFormat::AQUA . "Robin" . TextFormat::GREEN . "Hood" . TextFormat::RESET . TextFormat::GRAY . "]";
 	public $arrowname = " ";
 	public $mode = 0;
 	public $arenas = array();
@@ -43,7 +42,7 @@ class RBH extends PluginBase implements Listener {
 	
 	public function onEnable()
 	{
-	 $this->getLogger()->info(TextFormat::AQUA . "Alyas§aRobinhood");
+	 $this->getLogger()->info($this->prefix);
          $this->getServer()->getPluginManager()->registerEvents($this ,$this);
 	 $this->economy = $this->getServer()->getPluginManager()->getPlugin("EconomyAPI");
         if(!empty($this->economy))
@@ -87,7 +86,13 @@ public function onQuit(PlayerQuitEvent $event) : void
 		$this->leaveArena($player);
 	}
 }
-
+	
+public function onHit(ProjectileHitEntityEvent $event)
+{
+	$shooter = $event->getProjectile()->getOwningEntity();
+	$noob = $event->getEntityHit();//todo
+}
+	
 public function onShoot(EntityShootBowEvent $event)
 {
 	/*$player = $event->getEntity();
@@ -409,7 +414,7 @@ public function onInteract(PlayerInteractEvent $event)
 	{
 		if($this->mode == 26 )
 		{
-			$tile->setText(TextFormat::AQUA . "[Join]",TextFormat::YELLOW  . "0 / 12","§f".$this->currentLevel,$this->prefix);
+			$tile->setText(TextFormat::AQUA . "[Join]", TextFormat::YELLOW  . "0 / 12", "§f".$this->currentLevel, $this->prefix);
 			$this->refreshArenas();
 			$this->currentLevel = "";
 			$this->mode = 0;
@@ -418,7 +423,7 @@ public function onInteract(PlayerInteractEvent $event)
 			$text = $tile->getText();
 			if($text[3] == $this->prefix)
 			{
-				if($text[0]==TextFormat::AQUA . "[Join]")
+				if(TextFormat::clean($text[0]) == "[Join]")
 				{
 					$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
 					$namemap = str_replace("§f", "", $text[2]);
@@ -570,9 +575,10 @@ public function onRun($tick)
 	foreach($tiles as $t) {
 		if($t instanceof Sign) {	
 			$text = $t->getText();
-			if( $text[3] == $this->plugin->prefix)
+			if($text[3] == $this->plugin->prefix)
 			{
                			$namemap = str_replace("§f", "", $text[2]);
+				//$namemap = TextFormat::clean($text[2]);
 				$arenalevel = $this->plugin->getServer()->getLevelByName( $namemap );
                			$playercount = count($arenalevel->getPlayers());
 				$ingame = TextFormat::AQUA . "[Join]";
