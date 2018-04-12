@@ -18,15 +18,20 @@ use pocketmine\Player;
 use pocketmine\tile\Sign;
 use pocketmine\level\Level;
 use pocketmine\item\Item;
-use pocketmine\entity\projectile\Arrow as Bullet;
+
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
+
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityLevelChangeEvent;
 use pocketmine\event\entity\EntityShootBowEvent;
+
 use pocketmine\event\entity\ProjectileHitEntityEvent;
-use pocketmine\inventory\ChestInventory;
+use pocketmine\event\entity\ProjectileHitBlockEvent;
+use pocketmine\event\entity\ProjectileHitEvent;
+
+use pocketmine\event\inventory\InventoryPickupArrowEvent;
 use onebone\economyapi\EconomyAPI;
 
 use LittleBigMC\RBH\Resetmap;
@@ -70,7 +75,11 @@ class RBH extends PluginBase implements Listener {
 		$this->getServer()->getScheduler()->scheduleRepeatingTask(new RefreshSigns($this), 10);
 		
         }
-	
+//public function onPick(InventoryPickupArrowEvent $event)
+//{
+//	$levelname = $event->get
+//}
+
 public function getArrow() : Item
 {
 	return Item::get(Item::ARROW, 0, 1)->setCustomName("");
@@ -94,30 +103,30 @@ public function onQuit(PlayerQuitEvent $event) : void
 	}
 }
 	
-public function onHit(ProjectileHitEntityEvent $event)
+public function onHit(ProjectileHitEvent $event)
 {
-	$shooter = $event->getEntity()->getOwningEntity();//shooter
-	$noob = $event->getEntityHit();//todo
-	if($noob instanceof Player && $shooter instanceof Player/* && $event->getEntity() instanceof Bullet*/)
+	$level = $event->getEntity()->getLevel()->getFolderName();
+	if(in_array($level, $this->arenas))
 	{
-		$this->addKill($shooter->getName());
-		$this->addDeath($noob->getName());
-		$this->randSpawn($noob, $noob->getLevel()->getFolderName());
+		if($event instanceof ProjectileHitEntityEvent)
+		{
+			$shooter = $event->getEntity()->getOwningEntity();//shooter
+			$noob = $event->getEntityHit();//todo
+			if($noob instanceof Player && $shooter instanceof Player)
+			{
+				$this->addKill($shooter->getName());
+				$this->addDeath($noob->getName());
+				$this->randSpawn($noob, $noob->getLevel()->getFolderName());
+				$shooter->getInventory()->addItem( $this->getArrow() );
+			}
+		}
+		if($event instanceof ProjectileHitBlockEvent)
+		{
+			$event->getEntity()->kill();
+		}
 	}
 }
-/*	
-public function onShoot(EntityShootBowEvent $event)
-{
-	$player = $event->getEntity();
-	$level = $player->getLevel()->getFolderName(); 
-	if($player instanceof Player && array_key_exists($player->getName(), $this->isplaying)
-	{
-		$event->setProjectile(LLAMA_SPIT);
-	}
-	getOwningEntity() // for future shits
-	
-}
-*/	
+
 public function onBlockBreak(BlockBreakEvent $event)
 {
 	$player = $event->getPlayer();
@@ -156,8 +165,12 @@ public function onDamage(EntityDamageEvent $event)
 				{
 					$event->setCancelled();
 					$jugador = $event->getEntity();
-					$asassin = $event->getDamager();
-					$this->randSpawn( $jugador, $jugador->getLevel()->getFolderName() );
+					$assassin = $event->getDamager();
+					$assassin->getInventory()->addItem( $this->getArrow() );
+					
+					$this->addKill($assassin->getName());
+					$this->addDeath($jugador->getName());
+					$this->randSpawn($jugador, $jugador->getLevel()->getFolderName());
 				}
 			}	
 		}
@@ -220,7 +233,6 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 					}
 				} else {
 					$player->sendMessage($this->prefix . " •> " . "/rbh <make-leave> : Create Arena | Leave the game");
-					$player->sendMessage($this->prefix . " •> " . "/rbh <Rank> <Player> : Set Rank(Ranks: Warrior, Warrior+, Archer, Pyromancer)");
 					$player->sendMessage($this->prefix . " •> " . "/rbhstart : Start the game in 10 seconds");
 				}
 			break;
@@ -246,9 +258,31 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 	} 
 }
 
-public function announceWinner(String $arena)
+public function announceWinner(String $arena, $name = null)
 {
-	//soon
+	if(is_null($name))
+	{
+		$levelArena = $this->getServer()->getLevelByName($arena);
+		$plrs = $levelArena->getPlayers();
+		arsort($this->kills);
+		foreach($this->kills as $pln => $k)
+		{
+			if($this->getServer()->getPlayer($pln)->getLevel()->getFolderName() == $arena)
+			{
+				foreach($this->getServer()->getOnlinePlayers() as $ppl)
+				{
+					$ppl->sendMessage($this->prefix . " • §l§b".$pln."§f won in ".$arena.", with §b".$k."§fkills");
+					return true; //stops at first highest player
+				}
+			}
+		}
+	} else {
+		foreach($this->getServer()->getOnlinePlayers() as $ppl)
+		{
+			$ppl->sendMessage($this->prefix . " • §l§b".$name."§f won in ".$arena);
+		}
+		return true;
+	}
 }
 	
 private function addKill(string $name) : void
@@ -336,7 +370,8 @@ private function cleanPlayer(Player $player)
 private function randSpawn(Player $player, string $arena)
 {
 	$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-	$i = mt_rand(1, 12);
+	$i = mt_rand(1, 11);
+	$level = $this->getServer()->getLevelByName($arena);
 	switch($i)
 	{
 		case 0: $thespawn = $config->get($arena . "Spawn1"); break;
@@ -406,8 +441,6 @@ private function playGame(Player $player)
 {
 	$player->addTitle("§lPCP : §fRobin§aHood", "§l§fAim for the highest");
 	$this->giveKit($player);
-	$this->kills[ $player->getName() ] = 0; //create kill points
-	$this->deaths[ $player->getName() ] = 0; //create death points
 	array_push($this->isplaying, $player->getName()); //finally, set as playing
 }
 
@@ -419,24 +452,24 @@ private function giveKit(Player $player)
 	$player->getInventory()->setItem(2, Item::get(Item::STONE_AXE, 0, 1)->setCustomName('§l§fHatchet'));
 }
 	
-public function getTop(string $arena) : string
+public function getTop(string $arena) : string //TO DO, CODE BELOW CAUSES SERVER FREEZE
 {
-	$levelArena = $this->getServer()->getLevelByName($arena);
-	$plrs = $levelArena->getPlayers();
-	$i = 0;
+	//$levelArena = $this->getServer()->getLevelByName($arena);
+	//$plrs = $levelArena->getPlayers();
+	//$i = 0;
 	$top = "§f";
-	arsort($this->kills);
-	while($i < 5)
+	/* arsort($this->kills);
+	while($this->kills)
 	{
 		foreach($this->kills as $pln => $k)
 		{
 			if($this->getServer()->getPlayer($pln)->getLevel()->getFolderName() == $arena)
 			{
-				$top .= $pln . ": ". $k ." ";
-				$i += 1;
+				$top .= "[".$pln . " ". $k ."] ";
+				//$i += 1;
 			}
 		}
-	}
+	} */
 	return $top;
 }
 
@@ -469,10 +502,11 @@ public function onInteract(PlayerInteractEvent $event)
 					
 					$player->teleport($spawn, 0, 0);
 					$player->getInventory()->clearAll();
-       			                $player->removeAllEffects();
-                        		$player->setHealth(20);
+					$player->removeAllEffects();
+					$player->setHealth(20);
 					$player->setGameMode(2);
-						
+					$this->kills[ $player->getName() ] = 0; //create kill points
+					$this->deaths[ $player->getName() ] = 0; //create death points
 					$this->iswaiting[ $player->getName() ] = $namemap;
 					return true;
 					} else {
@@ -526,17 +560,17 @@ public function onInteract(PlayerInteractEvent $event)
 	}
 
 	
-	public function refreshArenas()
+public function refreshArenas()
+{
+	$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
+	$config->set("arenas",$this->arenas);
+	foreach($this->arenas as $arena)
 	{
-		$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-		$config->set("arenas",$this->arenas);
-		foreach($this->arenas as $arena)
-		{
-			$config->set($arena . "PlayTime", $this->playtime);
-			$config->set($arena . "StartTime", 90);
-		}
-		$config->save();
+		$config->set($arena . "PlayTime", $this->playtime);
+		$config->set($arena . "StartTime", 90);
 	}
+	$config->save();
+}
 
 public function dropitem(PlayerDropItemEvent $event)
 {
@@ -583,9 +617,9 @@ public function givePrize(Player $player)
 	$s .= "§l§f• Bonus: +§e2§f common crate keys§r\n";
 	$s .= "§l§f• Current ELO: §b".$rank." ".$div." §f| RP: §7[§c".$resp."§7] §f•§r\n";
 	$s .= "§r\n";
-       	$form->setContent($s);
+	$form->setContent($s);
 	
-       	$form->addButton("§lCheck Rankings", 1, "https://cdn4.iconfinder.com/data/icons/we-re-the-best/512/best-badge-cup-gold-medal-game-win-winner-gamification-first-award-acknowledge-acknowledgement-prize-victory-reward-conquest-premium-rank-ranking-gold-hero-star-quality-challenge-trophy-praise-victory-success-128.png");
+	$form->addButton("§lCheck Rankings", 1, "https://cdn4.iconfinder.com/data/icons/we-re-the-best/512/best-badge-cup-gold-medal-game-win-winner-gamification-first-award-acknowledge-acknowledgement-prize-victory-reward-conquest-premium-rank-ranking-gold-hero-star-quality-challenge-trophy-praise-victory-success-128.png");
 	$form->addButton("Confirm", 1, "https://cdn1.iconfinder.com/data/icons/materia-arrows-symbols-vol-8/24/018_317_door_exit_logout-128.png");
 	$form->sendToPlayer($player);
 	
@@ -654,6 +688,7 @@ class GameSender extends PluginTask
 				$time = $config->get($arena . "PlayTime");
 				$mins = floor($time / 60 % 60);
 				$secs = floor($time % 60);
+				if($secs > 10){ $secs = "0".$secs; }
 				$timeToStart = $config->get($arena . "StartTime");
 				$levelArena = $this->plugin->getServer()->getLevelByName($arena);
 				if($levelArena instanceof Level)
@@ -664,7 +699,7 @@ class GameSender extends PluginTask
 						$config->set($arena . "PlayTime", $this->plugin->playtime);
 						$config->set($arena . "StartTime", 90);
 					} else {
-						if(count($playersArena) >= 2 )
+						if(count($playersArena) >= 2)
 						{
 							if($timeToStart > 0) //TO DO fix player count and timer
 							{
@@ -675,12 +710,19 @@ class GameSender extends PluginTask
 								}
 								if( $timeToStart == 89)
 								{
-									$levelArena->setTime(7000);
+									$levelArena->setTime(0);
 									$levelArena->stopTime();
 								}
 								$config->set($arena . "StartTime", $timeToStart);
 							} else {
 								$aop = count($levelArena->getPlayers());
+								if($aop >= 2)
+								{
+									foreach($playersArena as $pla)
+									{
+										$pla->sendTip("§l§fK ".$this->plugin->kills[ $pla->getName() ]." : D ".$this->plugin->deaths[ $pla->getName() ]);
+									}
+								}
 								foreach($playersArena as $pla)
 								{
 									$pla->sendPopup($this->plugin->getTop($arena));
@@ -726,7 +768,7 @@ class GameSender extends PluginTask
 										$this->plugin->getServer()->getDefaultLevel()->loadChunk($spawn->getX(), $spawn->getZ());
 										foreach($playersArena as $pl)
 										{
-											$pl->addTitle("§lGame Over","§cresetting map: §a" . $arena);
+											$pl->addTitle("§lGame Over","§cYou have played on: §a" . $arena);
 											$pl->setHealth(20);
 											$this->plugin->leaveArena($pl);
 											//$this->getResetmap()->reload($levelArena);
@@ -737,9 +779,26 @@ class GameSender extends PluginTask
 								$config->set($arena . "PlayTime", $time);
 							}
 						} else { //if player is < 2 onWait time
-							foreach($playersArena as $pl)
+							if($timeToStart <= 0)
 							{
-								$pl->sendPopup("§e§l< §7need more player(s) to start§e >");
+								foreach($playersArena as $pl)
+								{
+									$this->plugin->announceWinner($arena, $pl->getName());
+									$pl->setHealth(20);
+									$this->plugin->leaveArena($pl);
+									$this->plugin->api->addMoney($pl, mt_rand(390, 408));//bullshit
+									$this->plugin->givePrize($pl);
+									$this->getResetmap()->reload($levelArena);
+								}
+								$config->set($arena . "PlayTime", $this->plugin->playtime);
+								$config->set($arena . "StartTime", 90);
+							} else {
+								foreach($playersArena as $pl)
+								{
+									$pl->sendPopup("§e§l< §7need more player(s) to start§e >");
+								}
+								$config->set($arena . "PlayTime", $this->plugin->playtime);
+								$config->set($arena . "StartTime", 90);
 							}
 						}
 					}
