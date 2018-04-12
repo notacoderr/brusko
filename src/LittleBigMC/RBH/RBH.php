@@ -114,6 +114,7 @@ public function onHit(ProjectileHitEvent $event)
 			$noob = $event->getEntityHit();//todo
 			if($noob instanceof Player && $shooter instanceof Player)
 			{
+				$noob->setHealth(20);
 				$this->addKill($shooter->getName());
 				$this->addDeath($noob->getName());
 				$this->randSpawn($noob, $noob->getLevel()->getFolderName());
@@ -167,7 +168,6 @@ public function onDamage(EntityDamageEvent $event)
 					$jugador = $event->getEntity();
 					$assassin = $event->getDamager();
 					$assassin->getInventory()->addItem( $this->getArrow() );
-					
 					$this->addKill($assassin->getName());
 					$this->addDeath($jugador->getName());
 					$this->randSpawn($jugador, $jugador->getLevel()->getFolderName());
@@ -389,9 +389,9 @@ private function randSpawn(Player $player, string $arena)
 	}
 	$spawn = new Position($thespawn[0]+0.5 , $thespawn[1] ,$thespawn[2]+0.5 ,$level);
 	$player->teleport($spawn, 0, 0);
-	$player->setHealth(20);
-	//$player->setGameMode(2);
 	$this->giveKit($player);
+	$player->setFood(20);
+	$player->setHealth(20);
 }
 	
 public function assignSpawn($arena)
