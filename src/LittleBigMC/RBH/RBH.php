@@ -161,14 +161,23 @@ public function onDamage(EntityDamageEvent $event)
 				if($event->getDamage() >= $event->getEntity()->getHealth())
 				{
 					$event->setCancelled();
-					$jugador = $event->getEntity();
-					$assassin = $event->getDamager();
-					$assassin->getInventory()->addItem( $this->getArrow() );
-					$this->addKill($assassin->getName());
-					$this->addDeath($jugador->getName());
-					$this->randSpawn($jugador, $jugador->getLevel()->getFolderName());
+					$inv = $event->getDamager()->getInventory();
+					if(!$inv->contains( Item::get(Item::ARROW) ))
+					{
+						$inv->addItem( $this->getArrow() );
+					}
+					$this->addKill($event->getDamager()->getName());
+					$this->addDeath($event->getEntity()->getName());
+					$this->randSpawn($event->getEntity(), $event->getEntity()->getLevel()->getFolderName());
 				}
 			}	
+			return true;
+		}
+	} else {
+		$a = $event->getEntity()->getName();
+		if(in_array($a, $this->isplaying) || array_key_exists($a, $this->iswaiting))
+		{
+			return $event->setCancelled();
 		}
 	}
 }
@@ -265,11 +274,13 @@ public function announceWinner(String $arena, $name = null)
 		{
 			if($this->getServer()->getPlayer($pln)->getLevel()->getFolderName() == $arena)
 			{
+				$this->api->addMoney($pln , mt_rand(390, 408));
+				$this->givePrize( $this->getServer()->getPlayer($pln) );
 				foreach($this->getServer()->getOnlinePlayers() as $ppl)
 				{
-					$ppl->sendMessage($this->prefix . " • §l§b".$pln."§f won in ".$arena.", with §b".$k."§fkills");
-					return true; //stops at first highest player
+					$ppl->sendMessage($this->prefix . " • §l§b".$pln."§f won in ".$arena.", with §b".$k." §fkills");
 				}
+				return true; //stops at first highest player
 			}
 		}
 	} else {
@@ -400,6 +411,7 @@ public function assignSpawn($arena)
 		{
 			$player = $this->getServer()->getPlayer($name);
 			$level = $this->getServer()->getLevelByName($arena);
+			var_dump($i);
 			switch($i)
 			{
 				case 0: $thespawn = $config->get($arena . "Spawn1"); break;
@@ -415,6 +427,7 @@ public function assignSpawn($arena)
 				case 10: $thespawn = $config->get($arena . "Spawn11"); break;
 				case 11: $thespawn = $config->get($arena . "Spawn12"); break;
 			}
+			var_dump($thespawn);
 			$spawn = new Position($thespawn[0]+0.5 , $thespawn[1] ,$thespawn[2]+0.5 ,$level);
 			$level->loadChunk($spawn->getFloorX(), $spawn->getFloorZ());
 			$player->teleport($spawn, 0, 0);
@@ -492,18 +505,20 @@ public function onInteract(PlayerInteractEvent $event)
 					$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
 					$namemap = str_replace("§f", "", $text[2]);
 					$level = $this->getServer()->getLevelByName($namemap);
-					$thespawn = $config->get($namemap . "Lobby");		
+					$thespawn = $config->get($namemap . "Lobby");
 					$spawn = new Position($thespawn[0]+0.5 , $thespawn[1] ,$thespawn[2]+0.5 ,$level);
 					$level->loadChunk($spawn->getFloorX(), $spawn->getFloorZ());
+					
+					$this->kills[ $player->getName() ] = 0; //create kill points
+					$this->deaths[ $player->getName() ] = 0; //create death points
+					$this->iswaiting[ $player->getName() ] = $namemap;
 					
 					$player->teleport($spawn, 0, 0);
 					$player->getInventory()->clearAll();
 					$player->removeAllEffects();
 					$player->setHealth(20);
 					$player->setGameMode(2);
-					$this->kills[ $player->getName() ] = 0; //create kill points
-					$this->deaths[ $player->getName() ] = 0; //create death points
-					$this->iswaiting[ $player->getName() ] = $namemap;
+
 					return true;
 				} else {
 					$player->sendMessage($this->prefix . " •> " . "Please try to join later...");
@@ -585,8 +600,12 @@ public function givePrize(Player $player)
 	$levelapi = $this->getServer()->getPluginManager()->getPlugin('LevelAPI');
 	$xp = mt_rand(15, 21);
 	$levelapi->addVal($name, "exp", $xp);
-	$crate = $this->getServer()->getPluginManager()->getPlugin("CoolCrates")->getSessionManager()->getSession($player);
-	$crate->addCrateKey("common.crate", 2);
+	$crate = $this->getServer()->getPluginManager()->getPlugin("CoolCrates");
+	
+	if(!is_null($crate))
+	{
+		$crate->getSessionManager()->getSession($player)->addCrateKey("common.crate", 2);
+	}
 	
 	$form = $this->getServer()->getPluginManager()->getPlugin("FormAPI")->createSimpleForm(function (Player $player, array $data)
 	{
@@ -649,7 +668,7 @@ public function onRun($tick)
 				$playercount = count($arenalevel->getPlayers());
 				$ingame = TextFormat::AQUA . "[Join]";
 				$config = new Config($this->plugin->getDataFolder() . "/config.yml", Config::YAML);
-				if($config->get($namemap . "PlayTime") != $this->plugin->playtime)
+				if($config->get($namemap . "PlayTime") <> $this->plugin->playtime)
 				{
 					$ingame = TextFormat::DARK_PURPLE . "[Running]";
 				}
@@ -737,14 +756,14 @@ class GameSender extends PluginTask
 										}
 									break;
 									
-									case 240:
+									case 239:
 										foreach($playersArena as $pl)
 										{
 											$pl->addTitle("§l§7Countdown", "§b§l".$mins. "§f:§b" .$secs. "§f remaining");
 										}
 									break;
 									
-									case 180:
+									case 179:
 										foreach($playersArena as $pl)
 										{
 											$pl->addTitle("§l§7Countdown", "§b§l".$mins. "§f:§b" .$secs. "§f remaining");
@@ -769,7 +788,6 @@ class GameSender extends PluginTask
 											$pl->addTitle("§lGame Over","§cYou have played on: §a" . $arena);
 											$pl->setHealth(20);
 											$this->plugin->leaveArena($pl);
-											//$this->getResetmap()->reload($levelArena);
 										}
 										$time = $this->plugin->playtime;
 									}
@@ -784,7 +802,7 @@ class GameSender extends PluginTask
 									$this->plugin->announceWinner($arena, $pl->getName());
 									$pl->setHealth(20);
 									$this->plugin->leaveArena($pl);
-									$this->plugin->api->addMoney($pl, mt_rand(390, 408));//bullshit
+									$this->plugin->api->addMoney($pl->getName(), mt_rand(390, 408));//bullshit
 									$this->plugin->givePrize($pl);
 									//$this->getResetmap()->reload($levelArena);
 								}
