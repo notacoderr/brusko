@@ -74,11 +74,7 @@ class RBH extends PluginBase implements Listener {
 		$this->getServer()->getScheduler()->scheduleRepeatingTask(new GameSender($this), 20);
 		$this->getServer()->getScheduler()->scheduleRepeatingTask(new RefreshSigns($this), 10);
 		
-        }
-//public function onPick(InventoryPickupArrowEvent $event)
-//{
-//	$levelname = $event->get
-//}
+	}
 
 public function getArrow() : Item
 {
@@ -722,13 +718,14 @@ class GameSender extends PluginTask
 									foreach($playersArena as $pla)
 									{
 										$pla->sendTip("§l§fK ".$this->plugin->kills[ $pla->getName() ]." : D ".$this->plugin->deaths[ $pla->getName() ]);
+										$pla->sendPopup("§l§7Game ends in: §b".$mins. "§f:§b" .$secs);
 									}
 								}
-								foreach($playersArena as $pla)
+								/* foreach($playersArena as $pl)
 								{
-									//$pla->sendPopup($this->plugin->getTop($arena));
-									$pl->sendPopup("§l§7Game ends in: §b".$mins. "§f:§b" .$secs);
-								}
+									$pla->sendPopup($this->plugin->getTop($arena));
+									
+								} */
 								$time--;
 								switch($time)
 								{
@@ -789,7 +786,7 @@ class GameSender extends PluginTask
 									$this->plugin->leaveArena($pl);
 									$this->plugin->api->addMoney($pl, mt_rand(390, 408));//bullshit
 									$this->plugin->givePrize($pl);
-									$this->getResetmap()->reload($levelArena);
+									//$this->getResetmap()->reload($levelArena);
 								}
 								$config->set($arena . "PlayTime", $this->plugin->playtime);
 								$config->set($arena . "StartTime", 90);
