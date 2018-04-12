@@ -411,7 +411,6 @@ public function assignSpawn($arena)
 		{
 			$player = $this->getServer()->getPlayer($name);
 			$level = $this->getServer()->getLevelByName($arena);
-			var_dump($i);
 			switch($i)
 			{
 				case 0: $thespawn = $config->get($arena . "Spawn1"); break;
@@ -427,7 +426,6 @@ public function assignSpawn($arena)
 				case 10: $thespawn = $config->get($arena . "Spawn11"); break;
 				case 11: $thespawn = $config->get($arena . "Spawn12"); break;
 			}
-			var_dump($thespawn);
 			$spawn = new Position($thespawn[0]+0.5 , $thespawn[1] ,$thespawn[2]+0.5 ,$level);
 			$level->loadChunk($spawn->getFloorX(), $spawn->getFloorZ());
 			$player->teleport($spawn, 0, 0);
