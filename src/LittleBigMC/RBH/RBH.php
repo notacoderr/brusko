@@ -491,7 +491,7 @@ public function onInteract(PlayerInteractEvent $event)
 			$text = $tile->getText();
 			if($text[3] == $this->prefix)
 			{
-				if(TextFormat::clean($text[0]) == "[Join]")
+				if($text[0] == TextFormat::AQUA . "[Join]")
 				{
 					$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
 					$namemap = str_replace("§f", "", $text[2]);
@@ -509,55 +509,56 @@ public function onInteract(PlayerInteractEvent $event)
 					$this->deaths[ $player->getName() ] = 0; //create death points
 					$this->iswaiting[ $player->getName() ] = $namemap;
 					return true;
-					} else {
-						$player->sendMessage($this->prefix . " •> " . "You can't join");
-					}
+				} else {
+					$player->sendMessage($this->prefix . " •> " . "Please try to join later...");
+					return true;
 				}
 			}
 		}
-		if($this->mode >= 1 && $this->mode <= 12 )
-		{
-			$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-			$config->set($this->currentLevel . "Spawn" . $this->mode, array($block->getX(),$block->getY()+1,$block->getZ()));
-			$player->sendMessage($this->prefix . " •> " . "Spawn " . $this->mode . " has been registered!");
-			$this->mode++;
-			if($this->mode == 13)
-			{
-				$player->sendMessage($this->prefix . " •> " . "Tap to set the lobby spawn");
-			}
-			$config->save();
-			return true;
-		}
+	}
+	if($this->mode >= 1 && $this->mode <= 12 )
+	{
+		$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
+		$config->set($this->currentLevel . "Spawn" . $this->mode, array($block->getX(),$block->getY()+1,$block->getZ()));
+		$player->sendMessage($this->prefix . " •> " . "Spawn " . $this->mode . " has been registered!");
+		$this->mode++;
 		if($this->mode == 13)
 		{
-			$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-			$config->set($this->currentLevel . "Lobby", array($block->getX(),$block->getY()+1,$block->getZ()));
-			$player->sendMessage($this->prefix . " •> " . "Lobby has been registered!");
-			$this->mode++;
-			if($this->mode == 14)
-			{
-				$player->sendMessage($this->prefix . " •> " . "Tap anywhere to continue");
-			}
-			$config->save();
-			return true;
+			$player->sendMessage($this->prefix . " •> " . "Tap to set the lobby spawn");
 		}
-		
+		$config->save();
+		return true;
+	}
+	if($this->mode == 13)
+	{
+		$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
+		$config->set($this->currentLevel . "Lobby", array($block->getX(),$block->getY()+1,$block->getZ()));
+		$player->sendMessage($this->prefix . " •> " . "Lobby has been registered!");
+		$this->mode++;
 		if($this->mode == 14)
 		{
-			$level = $this->getServer()->getLevelByName($this->currentLevel);
-			$level->setSpawn = (new Vector3($block->getX(),$block->getY()+2,$block->getZ()));
-			$player->sendMessage($this->prefix . " •> " . "Touch a sign to register Arena!");
-			$spawn = $this->getServer()->getDefaultLevel()->getSafeSpawn();
-			$this->getServer()->getDefaultLevel()->loadChunk($spawn->getFloorX(), $spawn->getFloorZ());
-			$player->teleport($spawn,0,0);
-			
-			$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-			$config->set("arenas", $this->arenas);
-			$config->save();
-			$this->mode=26;
-			return true;
+			$player->sendMessage($this->prefix . " •> " . "Tap anywhere to continue");
 		}
+		$config->save();
+		return true;
 	}
+	
+	if($this->mode == 14)
+	{
+		$level = $this->getServer()->getLevelByName($this->currentLevel);
+		$level->setSpawn = (new Vector3($block->getX(),$block->getY()+2,$block->getZ()));
+		$player->sendMessage($this->prefix . " •> " . "Touch a sign to register Arena!");
+		$spawn = $this->getServer()->getDefaultLevel()->getSafeSpawn();
+		$this->getServer()->getDefaultLevel()->loadChunk($spawn->getFloorX(), $spawn->getFloorZ());
+		$player->teleport($spawn,0,0);
+		
+		$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
+		$config->set("arenas", $this->arenas);
+		$config->save();
+		$this->mode=26;
+		return true;
+	}
+}
 
 	
 public function refreshArenas()
@@ -646,10 +647,10 @@ public function onRun($tick)
 			$text = $t->getText();
 			if($text[3] == $this->plugin->prefix)
 			{
-               			$namemap = str_replace("§f", "", $text[2]);
+				$namemap = str_replace("§f", "", $text[2]);
 				//$namemap = TextFormat::clean($text[2]);
 				$arenalevel = $this->plugin->getServer()->getLevelByName( $namemap );
-               			$playercount = count($arenalevel->getPlayers());
+				$playercount = count($arenalevel->getPlayers());
 				$ingame = TextFormat::AQUA . "[Join]";
 				$config = new Config($this->plugin->getDataFolder() . "/config.yml", Config::YAML);
 				if($config->get($namemap . "PlayTime") != $this->plugin->playtime)
@@ -688,7 +689,7 @@ class GameSender extends PluginTask
 				$time = $config->get($arena . "PlayTime");
 				$mins = floor($time / 60 % 60);
 				$secs = floor($time % 60);
-				if($secs > 10){ $secs = "0".$secs; }
+				if($secs < 10){ $secs = "0".$secs; }
 				$timeToStart = $config->get($arena . "StartTime");
 				$levelArena = $this->plugin->getServer()->getLevelByName($arena);
 				if($levelArena instanceof Level)
@@ -725,10 +726,10 @@ class GameSender extends PluginTask
 								}
 								foreach($playersArena as $pla)
 								{
-									$pla->sendPopup($this->plugin->getTop($arena));
+									//$pla->sendPopup($this->plugin->getTop($arena));
+									$pl->sendPopup("§l§7Game ends in: §b".$mins. "§f:§b" .$secs);
 								}
 								$time--;
-								
 								switch($time)
 								{
 									case 299:
@@ -754,13 +755,13 @@ class GameSender extends PluginTask
 									break;
 									
 									default:
-									if($time <= 75)
+									/* if($time <= 75)
 									{
 										foreach($playersArena as $pl)
 										{
 											$pl->sendPopup("§l§7Time remaining: §b".$mins. "§f:§b" .$secs);
 										}
-									}
+									} */
 									if($time <= 0)
 									{
 										$this->plugin->announceWinner($arena);
