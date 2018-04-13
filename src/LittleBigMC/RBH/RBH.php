@@ -332,6 +332,17 @@ function onTeleport(EntityLevelChangeEvent $event)
 			$this->removefromwaiting($player->getName());
 			$this->removedatas($player->getName());
 			$this->cleanPlayer($player);
+			return true;
+		}
+		if(in_array($to, $this->rbharenas))
+		{
+			$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
+			if($config->get($to . "PlayTime") <> $this->playtime)
+			{
+				$event->setCancelled();
+				$player->sendMessage($this->prefix . " •> " . "A game is currently running...");
+			}
+			return true;
 		}
         }
 }
