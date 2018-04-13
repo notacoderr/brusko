@@ -39,13 +39,12 @@ use LittleBigMC\RBH\RefreshArena;
 
 class RBH extends PluginBase implements Listener {
 
-        public $prefix = TextFormat::BOLD . TextFormat::GRAY . "[" . TextFormat::AQUA . "Robin" . TextFormat::GREEN . "Hood" . TextFormat::RESET . TextFormat::GRAY . "]";
+	public $prefix = TextFormat::BOLD . TextFormat::GRAY . "[" . TextFormat::AQUA . "Robin" . TextFormat::GREEN . "Hood" . TextFormat::RESET . TextFormat::GRAY . "]";
 	public $arrow;
 	public $mode = 0;
-	public $arenas = array();
-        public $currentLevel = "";
+    public $currentLevel = "";
 	public $playtime = 300;
-        public $isplaying = [], $iswaiting = [], $deaths = [], $kills = [];
+	public $isplayingrbh = [], $iswaitingrbh = [], $deaths = [], $kills = [], $rbharenas = [];
 	
 	public function onEnable()
 	{
@@ -61,11 +60,11 @@ class RBH extends PluginBase implements Listener {
 		
 		$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
 		
-		if($config->get("arenas")!=null)
+		if($config->get("rbharenas")!=null)
 		{
-			$this->arenas = $config->get("arenas");
+			$this->rbharenas = $config->get("rbharenas");
 		}
-                foreach($this->arenas as $lev)
+                foreach($this->rbharenas as $lev)
 		{
 			$this->getServer()->loadLevel($lev);
 		}
@@ -84,7 +83,7 @@ public function getArrow() : Item
 public function onJoin(PlayerJoinEvent $event) : void
 {
 	$player = $event->getPlayer();
-	if(in_array($player->getLevel()->getFolderName(), $this->arenas))
+	if(in_array($player->getLevel()->getFolderName(), $this->rbharenas))
 	{
 		$this->leaveArena($player);
 	}
@@ -93,7 +92,7 @@ public function onJoin(PlayerJoinEvent $event) : void
 public function onQuit(PlayerQuitEvent $event) : void
 {
         $player = $event->getPlayer();
-	if(in_array($player->getLevel()->getFolderName(), $this->arenas))
+	if(in_array($player->getLevel()->getFolderName(), $this->rbharenas))
 	{
 		$this->leaveArena($player);
 	}
@@ -102,7 +101,7 @@ public function onQuit(PlayerQuitEvent $event) : void
 public function onHit(ProjectileHitEvent $event)
 {
 	$level = $event->getEntity()->getLevel()->getFolderName();
-	if(in_array($level, $this->arenas))
+	if(in_array($level, $this->rbharenas))
 	{
 		if($event instanceof ProjectileHitEntityEvent)
 		{
@@ -128,7 +127,7 @@ public function onBlockBreak(BlockBreakEvent $event)
 {
 	$player = $event->getPlayer();
 	$level = $player->getLevel()->getFolderName(); 
-	if(in_array($level, $this->arenas))
+	if(in_array($level, $this->rbharenas))
 	{
 		$event->setCancelled();
 	}
@@ -138,7 +137,7 @@ public function onBlockPlace(BlockPlaceEvent $event)
 {
 	$player = $event->getPlayer();
 	$level = $player->getLevel()->getFolderName(); 
-	if(in_array($level, $this->arenas))
+	if(in_array($level, $this->rbharenas))
 	{
 		$event->setCancelled();
 	}
@@ -151,12 +150,12 @@ public function onDamage(EntityDamageEvent $event)
 		if($event->getEntity() instanceof Player && $event->getDamager() instanceof Player)
 		{
 			$a = $event->getEntity()->getName(); $b = $event->getDamager()->getName();
-			if(array_key_exists($a, $this->iswaiting) || array_key_exists($b, $this->iswaiting))
+			if(array_key_exists($a, $this->iswaitingrbh) || array_key_exists($b, $this->iswaitingrbh))
 			{
 				$event->setCancelled();
 				return true;
 			}
-			if(in_array($a, $this->isplaying) && in_array($b, $this->isplaying))
+			if(in_array($a, $this->isplayingrbh) && in_array($b, $this->isplayingrbh))
 			{
 				if($event->getDamage() >= $event->getEntity()->getHealth())
 				{
@@ -175,7 +174,7 @@ public function onDamage(EntityDamageEvent $event)
 		}
 	} else {
 		$a = $event->getEntity()->getName();
-		if(in_array($a, $this->isplaying) || array_key_exists($a, $this->iswaiting))
+		if(in_array($a, $this->isplayingrbh) || array_key_exists($a, $this->iswaitingrbh))
 		{
 			return $event->setCancelled();
 		}
@@ -184,7 +183,6 @@ public function onDamage(EntityDamageEvent $event)
 
 public function onCommand(CommandSender $player, Command $cmd, $label, array $args) : bool
 {
-	//$lang = new Config($this->getDataFolder() . "/lang.yml", Config::YAML);
 	if($player instanceof Player)
 	{
 		switch($cmd->getName())
@@ -202,7 +200,7 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 									{
 										$this->getServer()->loadLevel($args[1]);
 										$this->getServer()->getLevelByName($args[1])->loadChunk($this->getServer()->getLevelByName($args[1])->getSafeSpawn()->getFloorX(), $this->getServer()->getLevelByName($args[1])->getSafeSpawn()->getFloorZ());
-										array_push($this->arenas,$args[1]);
+										array_push($this->rbharenas,$args[1]);
 										$this->currentLevel = $args[1];
 										$this->mode = 1;
 										$player->sendMessage($this->prefix . " •> " . "Touch 1st player spawn");
@@ -227,7 +225,7 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 					else if($args[0] == "leave" or $args[0]=="quit" )
 					{
 						$level = $player->getLevel()->getFolderName();
-						if(in_array($level, $this->arenas))
+						if(in_array($level, $this->rbharenas))
 						{
 							$this->leaveArena($player); 
 							return true;
@@ -247,8 +245,8 @@ public function onCommand(CommandSender $player, Command $cmd, $label, array $ar
 			{
 				$player->sendMessage($this->prefix . " •> " . "§aStarting in 10 seconds...");
 				$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-				$config->set("arenas",$this->arenas);
-				foreach($this->arenas as $arena)
+				$config->set("rbharenas",$this->rbharenas);
+				foreach($this->rbharenas as $arena)
 				{
 					$config->set($arena . "PlayTime", $this->playtime);
 					$config->set($arena . "StartTime", 10);
@@ -327,7 +325,7 @@ function onTeleport(EntityLevelChangeEvent $event)
 		$player = $event->getEntity();
 		$from = $event->getOrigin()->getFolderName();
 		$to = $event->getTarget()->getFolderName();
-		if(in_array($from, $this->arenas) && !in_array($to, $this->arenas))
+		if(in_array($from, $this->rbharenas) && !in_array($to, $this->rbharenas))
 		{
 			$event->getEntity()->setGameMode(2);	
 			$this->removefromplaying($player->getName());
@@ -340,14 +338,14 @@ function onTeleport(EntityLevelChangeEvent $event)
 
 public function removefromplaying(string $playername)
 {
-	if (in_array($playername, $this->isplaying)){
-		unset($this->isplaying[ $playername ]);
+	if (in_array($playername, $this->isplayingrbh)){
+		unset($this->isplayingrbh[ $playername ]);
 	}
 }
 	
 public function removefromwaiting(string $playername)
 {
-	if (array_key_exists($playername, $this->iswaiting)){
+	if (array_key_exists($playername, $this->iswaitingrbh)){
 		unset($this->waiting[ $playername ]);
 	}
 }
@@ -405,7 +403,7 @@ public function assignSpawn($arena)
 {
 	$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
 	$i = 0;
-	foreach($this->iswaiting as $name => $ar)
+	foreach($this->iswaitingrbh as $name => $ar)
 	{
 		if(strtolower($ar) === strtolower($arena))
 		{
@@ -433,51 +431,42 @@ public function assignSpawn($arena)
 			//$player->setGameMode(2);
 			
 			$this->playGame($player);
-			unset( $this->iswaiting[$name] );
+			unset( $this->iswaitingrbh[$name] );
 			$i += 1;
 		}
 	}
 }
 	
-public function sendKD(Player $player, string $name, string $arena)
-{
-	$player->addTitle("§l§fK:§a ".$this->kills[$name]." §fD:§c ".$this->deaths[$name], $this->getTop($arena));
-}
-	
 private function playGame(Player $player)
 {
 	$player->addTitle("§lPCP : §fRobin§aHood", "§l§fAim for the highest");
-	$this->giveKit($player);
-	array_push($this->isplaying, $player->getName()); //finally, set as playing
+	//$this->giveKit($player);
+	$this->insertArrow($player);
+	array_push($this->isplayingrbh, $player->getName()); //finally, set as playing
+}
+
+public function insertBow(Player $player)
+{
+	$player->getInventory()->setItem(0, Item::get(Item::BOW, 0, 1)->setCustomName('§l§fAncient Long Bow'));
+}
+
+public function insertAxe(Player $player)
+{
+	$player->getInventory()->setItem(1, Item::get(Item::STONE_AXE, 0, 1)->setCustomName('§l§fHatchet'));
+}
+
+public function insertArrow(Player $player)
+{
+	$player->getInventory()->setItem(2, $this->getArrow() );
 }
 
 private function giveKit(Player $player)
 {
 	$player->getInventory()->clearAll();
 	$player->getInventory()->setItem(0, Item::get(Item::BOW, 0, 1)->setCustomName('§l§fAncient Long Bow'));
-	$player->getInventory()->setItem(1, $this->getArrow() );
-	$player->getInventory()->setItem(2, Item::get(Item::STONE_AXE, 0, 1)->setCustomName('§l§fHatchet'));
-}
+	$player->getInventory()->setItem(1, Item::get(Item::STONE_AXE, 0, 1)->setCustomName('§l§fHatchet'));
+	$player->getInventory()->setItem(2, $this->getArrow() );
 	
-public function getTop(string $arena) : string //TO DO, CODE BELOW CAUSES SERVER FREEZE
-{
-	//$levelArena = $this->getServer()->getLevelByName($arena);
-	//$plrs = $levelArena->getPlayers();
-	//$i = 0;
-	$top = "§f";
-	/* arsort($this->kills);
-	while($this->kills)
-	{
-		foreach($this->kills as $pln => $k)
-		{
-			if($this->getServer()->getPlayer($pln)->getLevel()->getFolderName() == $arena)
-			{
-				$top .= "[".$pln . " ". $k ."] ";
-				//$i += 1;
-			}
-		}
-	} */
-	return $top;
 }
 
 public function onInteract(PlayerInteractEvent $event)
@@ -490,7 +479,7 @@ public function onInteract(PlayerInteractEvent $event)
 		if($this->mode == 26 )
 		{
 			$tile->setText(TextFormat::AQUA . "[Join]", TextFormat::YELLOW  . "0 / 12", "§f".$this->currentLevel, $this->prefix);
-			$this->refreshArenas();
+			$this->refreshrbharenas();
 			$this->currentLevel = "";
 			$this->mode = 0;
 			$player->sendMessage($this->prefix . " •> " . "Arena Registered!");
@@ -509,7 +498,7 @@ public function onInteract(PlayerInteractEvent $event)
 					
 					$this->kills[ $player->getName() ] = 0; //create kill points
 					$this->deaths[ $player->getName() ] = 0; //create death points
-					$this->iswaiting[ $player->getName() ] = $namemap;
+					$this->iswaitingrbh[ $player->getName() ] = $namemap;
 					
 					$player->teleport($spawn, 0, 0);
 					$player->getInventory()->clearAll();
@@ -562,7 +551,7 @@ public function onInteract(PlayerInteractEvent $event)
 		$player->teleport($spawn,0,0);
 		
 		$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-		$config->set("arenas", $this->arenas);
+		$config->set("rbharenas", $this->rbharenas);
 		$config->save();
 		$this->mode=26;
 		return true;
@@ -570,11 +559,11 @@ public function onInteract(PlayerInteractEvent $event)
 }
 
 	
-public function refreshArenas()
+public function refreshrbharenas()
 {
 	$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-	$config->set("arenas",$this->arenas);
-	foreach($this->arenas as $arena)
+	$config->set("rbharenas",$this->rbharenas);
+	foreach($this->rbharenas as $arena)
 	{
 		$config->set($arena . "PlayTime", $this->playtime);
 		$config->set($arena . "StartTime", 90);
@@ -585,7 +574,7 @@ public function refreshArenas()
 public function dropitem(PlayerDropItemEvent $event)
 {
 	$player = $event->getPlayer();
-	if(in_array($player->getLevel()->getFolderName(), $this->arenas))
+	if(in_array($player->getLevel()->getFolderName(), $this->rbharenas))
 	{
 		$event->setCancelled(true);
 		return true;
@@ -688,16 +677,13 @@ class GameSender extends PluginTask
 		$this->plugin = $plugin;
 		parent::__construct($plugin);
 	}
-    	//public function getResetmap() {
-		//return new Resetmap($this);
-   	 //}
 	public function onRun($tick)
 	{
 		$config = new Config($this->plugin->getDataFolder() . "/config.yml", Config::YAML);
-		$arenas = $config->get("arenas");
-		if(!empty($arenas))
+		$rbharenas = $config->get("rbharenas");
+		if(!empty($rbharenas))
 		{
-			foreach($arenas as $arena)
+			foreach($rbharenas as $arena)
 			{
 				$time = $config->get($arena . "PlayTime");
 				$mins = floor($time / 60 % 60);
@@ -718,15 +704,44 @@ class GameSender extends PluginTask
 							if($timeToStart > 0) //TO DO fix player count and timer
 							{
 								$timeToStart--;
-								foreach($playersArena as $pl)
+								
+								switch($timeToStart)
 								{
-									$pl->sendPopup("§e< " . TextFormat::GREEN . $timeToStart . " seconds to start§e >");
+									case 10:
+										foreach($playersArena as $pl)
+										{
+											$pl->sendPopup($this->plugin->prefix . " §7•>§c Attention!§f your inventory will be wiped..");
+										}
+									break;
+									
+									case 7: //wipes inventory
+										foreach($playersArena as $pl)
+										{
+											$pl->getInventory()->clearAll();
+										}
+									break;
+									
+									case 5: //inserts bow
+										foreach($playersArena as $pl)
+										{
+											$this->plugin->insertBow($pl);
+										}
+									break;
+									
+									case 3: //inserts axe
+										foreach($playersArena as $pl)
+										{
+											$this->plugin->insertAxe($pl);
+										}
+									break;
+											//insert arrow is in playGame() function
+									default:
+										foreach($playersArena as $pl)
+										{
+											$pl->sendPopup("§l§7[ §f". $timeToStart ." seconds to start §7]");
+										}
 								}
-								if( $timeToStart == 89)
-								{
-									$levelArena->setTime(0);
-									$levelArena->stopTime();
-								}
+								
 								$config->set($arena . "StartTime", $timeToStart);
 							} else {
 								$aop = count($levelArena->getPlayers());
@@ -738,11 +753,7 @@ class GameSender extends PluginTask
 										$pla->sendPopup("§l§7Game ends in: §b".$mins. "§f:§b" .$secs);
 									}
 								}
-								/* foreach($playersArena as $pl)
-								{
-									$pla->sendPopup($this->plugin->getTop($arena));
-									
-								} */
+								
 								$time--;
 								switch($time)
 								{
@@ -769,13 +780,6 @@ class GameSender extends PluginTask
 									break;
 									
 									default:
-									/* if($time <= 75)
-									{
-										foreach($playersArena as $pl)
-										{
-											$pl->sendPopup("§l§7Time remaining: §b".$mins. "§f:§b" .$secs);
-										}
-									} */
 									if($time <= 0)
 									{
 										$this->plugin->announceWinner($arena);
@@ -792,7 +796,7 @@ class GameSender extends PluginTask
 								}
 								$config->set($arena . "PlayTime", $time);
 							}
-						} else { //if player is < 2 onWait time
+						} else {
 							if($timeToStart <= 0)
 							{
 								foreach($playersArena as $pl)
