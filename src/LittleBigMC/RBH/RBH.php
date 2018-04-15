@@ -157,8 +157,13 @@ public function onDamage(EntityDamageEvent $event)
 			}
 			if(in_array($a, $this->isplayingrbh) && in_array($b, $this->isplayingrbh))
 			{
+				if($event->getCause() == 2)
+				{
+					$event->setDamage(0.0); //hack, to remove damage on projectile hit entity event
+				}
 				if($event->getDamage() >= $event->getEntity()->getHealth())
 				{
+					$event->setDamage(0.0); //hack, to avoid players from getting killed
 					$event->setCancelled();
 					$inv = $event->getDamager()->getInventory();
 					if(!$inv->contains( Item::get(Item::ARROW) ))
