@@ -161,6 +161,9 @@ public function onDamage(EntityDamageEvent $event)
 				{
 					$event->setDamage(0.0); //hack, to remove damage on projectile hit entity event
 				}
+				
+				$event->setCancelled(false); //for other plugin's cancelling damage event
+				
 				if($event->getDamage() >= $event->getEntity()->getHealth())
 				{
 					$event->setDamage(0.0); //hack, to avoid players from getting killed
@@ -341,13 +344,10 @@ function onTeleport(EntityLevelChangeEvent $event)
 		}
 		if(in_array($to, $this->rbharenas))
 		{
-			$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-			if($config->get($to . "PlayTime") <> $this->playtime)
-			{
-				$event->setCancelled();
-				$player->sendMessage($this->prefix . " •> " . "A game is currently running...");
+			if (!array_key_exists($player->getName(), $this->iswaitingrbh)){
+				$player->sendMessage($this->prefix . " •> §cPlease use the sign to join");
+				return $event->setCancelled();
 			}
-			return true;
 		}
         }
 }
@@ -362,7 +362,7 @@ public function removefromplaying(string $playername)
 public function removefromwaiting(string $playername)
 {
 	if (array_key_exists($playername, $this->iswaitingrbh)){
-		unset($this->waiting[ $playername ]);
+		unset($this->iswaitingrbh[ $playername ]);
 	}
 }
 
@@ -505,6 +505,8 @@ public function onInteract(PlayerInteractEvent $event)
 			{
 				if($text[0] == TextFormat::AQUA . "[Join]")
 				{
+					$this->iswaitingrbh[ $player->getName() ] = $namemap;//beta, set to waiting to be able to tp
+					
 					$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
 					$namemap = str_replace("§f", "", $text[2]);
 					$level = $this->getServer()->getLevelByName($namemap);
@@ -514,7 +516,6 @@ public function onInteract(PlayerInteractEvent $event)
 					
 					$this->kills[ $player->getName() ] = 0; //create kill points
 					$this->deaths[ $player->getName() ] = 0; //create death points
-					$this->iswaitingrbh[ $player->getName() ] = $namemap;
 					
 					$player->teleport($spawn, 0, 0);
 					$player->getInventory()->clearAll();
