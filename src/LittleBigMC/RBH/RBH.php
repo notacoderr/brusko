@@ -505,17 +505,17 @@ public function onInteract(PlayerInteractEvent $event)
 			{
 				if($text[0] == TextFormat::AQUA . "[Join]")
 				{
-					$this->iswaitingrbh[ $player->getName() ] = $namemap;//beta, set to waiting to be able to tp
-					
 					$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
 					$namemap = str_replace("§f", "", $text[2]);
+					
+					$this->iswaitingrbh[ $player->getName() ] = $namemap;//beta, set to waiting to be able to tp
+					$this->kills[ $player->getName() ] = 0; //create kill points
+					$this->deaths[ $player->getName() ] = 0; //create death points
+					
 					$level = $this->getServer()->getLevelByName($namemap);
 					$thespawn = $config->get($namemap . "Lobby");
 					$spawn = new Position($thespawn[0]+0.5 , $thespawn[1] ,$thespawn[2]+0.5 ,$level);
 					$level->loadChunk($spawn->getFloorX(), $spawn->getFloorZ());
-					
-					$this->kills[ $player->getName() ] = 0; //create kill points
-					$this->deaths[ $player->getName() ] = 0; //create death points
 					
 					$player->teleport($spawn, 0, 0);
 					$player->getInventory()->clearAll();
