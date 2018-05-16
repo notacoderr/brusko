@@ -110,8 +110,8 @@ public function onHit(ProjectileHitEvent $event)
 			if($noob instanceof Player && $shooter instanceof Player)
 			{
 				$noob->setHealth(20);
-				$this->addKill($shooter->getName());
-				$this->addDeath($noob->getName());
+				$this->addKill($shooter->getName()); $this->notifyPlayer($shooter, 1);
+				$this->addDeath($noob->getName()); $this->notifyPlayer($noob, 2);
 				$this->randSpawn($noob, $noob->getLevel()->getFolderName());
 				$shooter->getInventory()->addItem( $this->getArrow() );
 			}
@@ -173,8 +173,8 @@ public function onDamage(EntityDamageEvent $event)
 					{
 						$inv->addItem( $this->getArrow() );
 					}
-					$this->addKill($event->getDamager()->getName());
-					$this->addDeath($event->getEntity()->getName());
+					$this->addKill($event->getDamager()->getName()); $this->notifyPlayer($event->getDamager(), 1);
+					$this->addDeath($event->getEntity()->getName()); $this->notifyPlayer($event->getEntity(), 2);
 					$this->randSpawn($event->getEntity(), $event->getEntity()->getLevel()->getFolderName());
 				}
 			}	
@@ -186,6 +186,20 @@ public function onDamage(EntityDamageEvent $event)
 		{
 			return $event->setCancelled();
 		}
+	}
+}
+	
+private function notifyPlayer(Player $player, int $type): void
+{
+	switch($type)
+	{
+		case 1:
+			$player->addTitle("", "§b+1 Kill");
+		break;
+
+		case 2:
+			$player->addTitle("", "§7c+1 Death");
+		break;
 	}
 }
 
@@ -379,11 +393,12 @@ public function removedatas(string $playername)
 private function cleanPlayer(Player $player)
 {
 	$player->getInventory()->clearAll();
-	$i = Item::get(0);
-	$player->getArmorInventory()->setHelmet($i);
-	$player->getArmorInventory()->setChestplate($i);
-	$player->getArmorInventory()->setLeggings($i);
-	$player->getArmorInventory()->setBoots($i);	
+	//$i = Item::get(0);
+	//$player->getArmorInventory()->setHelmet($i);
+	//$player->getArmorInventory()->setChestplate($i);
+	//$player->getArmorInventory()->setLeggings($i);
+	//$player->getArmorInventory()->setBoots($i);
+	$player->getArmorInventory()->clearAll();
 	$player->getArmorInventory()->sendContents($player);
 	$player->setNameTag( $this->getServer()->getPluginManager()->getPlugin('PureChat')->getNametag($player) );
 }
@@ -391,7 +406,7 @@ private function cleanPlayer(Player $player)
 private function randSpawn(Player $player, string $arena)
 {
 	$config = new Config($this->getDataFolder() . "/config.yml", Config::YAML);
-	$i = mt_rand(1, 11);
+	$i = mt_rand(0, 11);
 	$level = $this->getServer()->getLevelByName($arena);
 	switch($i)
 	{
@@ -456,7 +471,6 @@ public function assignSpawn($arena)
 private function playGame(Player $player)
 {
 	$player->addTitle("§lPCP : §fRobin§aHood", "§l§fAim for the highest");
-	//$this->giveKit($player);
 	$this->insertArrow($player);
 	array_push($this->isplayingrbh, $player->getName()); //finally, set as playing
 }
@@ -667,7 +681,6 @@ public function onRun($tick)
 			if($text[3] == $this->plugin->prefix)
 			{
 				$namemap = str_replace("§f", "", $text[2]);
-				//$namemap = TextFormat::clean($text[2]);
 				$arenalevel = $this->plugin->getServer()->getLevelByName( $namemap );
 				$playercount = count($arenalevel->getPlayers());
 				$ingame = TextFormat::AQUA . "[Join]";
