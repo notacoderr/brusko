@@ -3,9 +3,9 @@ main: LittleBigMC\RBH\RBH
 
 author: CodeBreak
 
-version: 1.0.1-indev
+version: 1.0.2-indev
 
-api: [3.0.0-ALPHA11, 3.0.0-ALPHA12]
+api: [3.0.0-ALPHA12, 3.0.0-ALPHA13]
 
 commands:
     rbh:
