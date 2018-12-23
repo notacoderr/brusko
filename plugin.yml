@@ -1,16 +1,13 @@
 name: AlyasRobinHood
 main: LittleBigMC\RBH\RBH
-
 author: CodeBreak
-
 version: 1.0.2-indev
-
-api: [3.0.0-ALPHA12, 3.0.0-ALPHA13]
+api: [3.0.0, 3.5.2, 4.0.0]
 
 commands:
     rbh:
-        usage: /mb <leave-make>
-        description: MicroBattles-Commands
+        usage: /rbh <leave-make>
+        description: Robinhood main cmd
     rbhstart:
-        usage: /mbstart
-        description: MicroBattles-Force start
+        usage: /rbhstart
+        description: Robinhood force start
