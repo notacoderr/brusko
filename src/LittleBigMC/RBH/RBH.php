@@ -2,7 +2,7 @@
 namespace LittleBigMC\RBH;
 
 use pocketmine\plugin\PluginBase;
-use pocketmine\scheduler\PluginTask;
+use pocketmine\scheduler\Task;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\player\PlayerDropItemEvent;
@@ -194,7 +194,7 @@ private function notifyPlayer(Player $player, int $type): void
 	switch($type)
 	{
 		case 1:
-			$player->addTitle("", "§b+1 Kill");
+			$player->addTitle("", "§a+1 Kill");
 		break;
 
 		case 2:
